@@ -1,141 +1,148 @@
 # Enterprise Operations Anomaly & SLA Monitoring System
 
-An operational monitoring engine that ingests high-volume transactional logs,
-detects SLA breach risk with an ML model, and exposes microservice endpoints
-for operational dashboards.
+A production-ready microservices ecosystem that ingests high-volume operational logs, evaluates SLA thresholds, uses a Scikit-Learn machine learning pipeline to predict SLA breach probability, triggers multi-channel alerts, and displays real-time glassmorphism visualizations on an Angular frontend dashboard.
 
-## Architecture
+---
+
+## 🏗️ System Architecture
 
 ```
-                     ┌───────────────────────┐
-   client systems ─▶ │   Ingestion Service    │──▶ MongoDB (operation_logs)
-                     │   (Spring Boot, 8081)  │
-                     └──────────┬────────────┘
-                                │ reads thresholds
-                                ▼
-                     ┌───────────────────────┐
-                     │      PostgreSQL        │  tenants, user_profiles,
-                     │                        │  sla_thresholds
-                     └──────────┬────────────┘
-                                │
-                     ┌──────────▼────────────┐      ┌────────────────────┐
-                     │   SLA Engine Service   │◀────▶│   ML Service        │
-                     │   (Spring Boot)        │      │ (FastAPI + sklearn) │
-                     └──────────┬────────────┘      └────────────────────┘
-                                │ breach events
-                                ▼
-                     ┌───────────────────────┐
-                     │  Alerting Service      │
-                     │  (Spring Boot)         │
-                     └──────────┬────────────┘
-                                │
-                                ▼
-                     ┌───────────────────────┐
-                     │  Angular Admin Dash    │
-                     └───────────────────────┘
+                                  ┌───────────────────────────┐
+                                  │  Angular Admin Dashboard  │◀──┐
+                                  │    (Nginx Host: 4200)     │   │
+                                  └─────────────┬─────────────┘   │
+                                                │                 │ HTTP / REST
+                                                ▼                 │ (Authed via X-API-Key)
+    ┌───────────────────────┐     ┌───────────────────────────┐   │
+ ──▶│   Ingestion Service   │◀───▶│    SLA Engine Service     │◀──┘
+    │  (Spring Boot: 8081)  │     │   (Spring Boot: 8082)     │
+    └───────────┬───────────┘     └─────────────┬─────────────┘
+                │                               │
+                ▼ (Operation Logs)              ▼ (Evaluations)
+        ┌───────────────┐               ┌───────────────┐
+        │ MongoDB:27017 │               │ Postgres:5432 │ (Tenants, Thresholds, Profiles)
+        └───────────────┘               └───────────────┘
+                                                │
+                                                ▼ (Breach events)
+    ┌───────────────────────┐     ┌───────────────────────────┐
+    │      ML Service       │◀───▶│     Alerting Service      │
+    │    (FastAPI: 8000)    │     │   (Spring Boot: 8083)     │
+    └───────────────────────┘     └───────────────────────────┘
 ```
 
-## Build Status
+---
 
-| Component            | Status                                   |
-|-----------------------|-------------------------------------------|
-| Infra (docker-compose)| ✅ Phase 1                                 |
-| Postgres schema       | ✅ Phase 1                                 |
-| Ingestion Service      | ✅ Phase 1 — build/test/run instructions below |
-| SLA Engine Service     | ⏳ Phase 2                                 |
-| ML Service (FastAPI)   | ⏳ Phase 3                                 |
-| Alerting Service       | ⏳ Phase 4                                 |
-| Angular Admin Dashboard| ⏳ Phase 5                                 |
-| Postman collection     | 🚧 Growing each phase — see `docs/postman_collection.json` |
+## 🛠️ Build Status & Completed Phases
 
-## Tech Stack
+| Component | Status | Port (Host) | Description |
+| :--- | :--- | :--- | :--- |
+| **Ingestion Service** | ✅ Complete | `8081` | Spring Boot API that ingests logs to MongoDB. |
+| **SLA Engine Service** | ✅ Complete | `8082` | Evaluates log durations against Postgres SLA thresholds. |
+| **ML Service** | ✅ Complete | `8000` | FastAPI predictor estimating SLA breach probability. |
+| **Alerting Service** | ✅ Complete | `8083` | Logs notifications (EMAIL/LOG) to database audits. |
+| **Admin Dashboard** | ✅ Complete | `4200` | Glassmorphism dashboard visualizing streams and KPIs. |
+| **Prometheus Telemetry**| ✅ Complete | `9090` | Scraping CPU/Memory/JVM stats (in `monitoring` profile). |
+| **Grafana Dashboard** | ✅ Complete | `3000` | Pre-provisioned metrics display (in `monitoring` profile). |
 
-- **Java 17 / Spring Boot 3.3** — Ingestion Service, SLA Engine, Alerting Service
-- **PostgreSQL 16** — tenants, user profiles, SLA thresholds (relational)
-- **MongoDB 7** — high-throughput unstructured operation log stream
-- **Python / FastAPI + scikit-learn** — SLA breach-risk prediction
-- **Angular** — admin dashboard
-- **JUnit 5 + Mockito** — unit/slice testing, target >85% line coverage (enforced via JaCoCo)
+---
 
-## Running Phase 1 locally
+## 🔒 Production Security Hardening
 
-### 1. Start infrastructure + ingestion service
+This ecosystem is fully hardened for a production deployment:
+* **Secrets Management**: Plaintext credentials are fully parameterized. Values are loaded dynamically from the git-ignored root `.env` file.
+* **CORS Restrictions**: Standard wildcard `*` mappings are disabled. Services only permit connections originating from `CORS_ALLOWED_ORIGIN` (the dashboard at `http://localhost:4200`).
+* **Microservice Authentication**: All non-public APIs require the `X-API-Key` header matching the key defined in the environmental variables.
+* **Database Isolation**: Host mappings for PostgreSQL (`5432`) and MongoDB (`27017`) are closed. Databases reside exclusively within the isolated Docker bridge network.
+* **Non-Root Execution**: Microservices execute inside their containers as a non-root system user (`appuser` with UID `10001`) to protect the host container runtime.
 
+---
+
+## 🚀 Getting Started
+
+### 1. Environment Configurations
+Copy `.env.example` to `.env` in the project root:
 ```bash
-docker compose up --build
+cp .env.example .env
 ```
+*(Optionally change default database passwords and the global API Key in `.env` before running).*
 
-This starts:
-- Postgres on `5432` (auto-seeded with a demo `ACME` tenant + `PAYMENT_BATCH` SLA threshold)
-- MongoDB on `27017`
-- Ingestion Service on `8081`
+### 2. Startup Commands
 
-### 2. Try it
-
+#### Default Profile (Application & Databases Only)
+To launch the core microservices and databases:
 ```bash
-curl -X POST http://localhost:8081/api/v1/logs \
-  -H "Content-Type: application/json" \
-  -d '{
-    "tenantCode": "ACME",
-    "jobType": "PAYMENT_BATCH",
-    "jobId": "job-12345",
-    "startedAt": "2026-07-24T08:00:00Z",
-    "completedAt": "2026-07-24T08:04:30Z",
-    "status": "SUCCESS",
-    "metadata": { "recordCount": 5400 }
-  }'
-
-curl "http://localhost:8081/api/v1/logs?tenantCode=ACME"
+docker compose up -d --build
 ```
 
-Or import `docs/postman_collection.json` into Postman.
+#### Monitoring Profile (Optional Telemetry Stack)
+To run Prometheus and Grafana telemetry side-by-side with the application stack:
+```bash
+docker compose --profile monitoring up -d
+```
+* **Prometheus**: Accessible at [http://localhost:9090/](http://localhost:9090/) (Targets: Ingestion, SLA Engine, Alerting).
+* **Grafana**: Accessible at [http://localhost:3000/](http://localhost:3000/) (Pre-configured datasource + JVM Metrics dashboard, credentials: `admin` / `admin`).
 
-### 3. Run tests + coverage (inside `ingestion-service/`)
+---
 
+## 🧪 Testing & Code Coverage
+
+To run the automated test suites locally:
+
+### Java Microservices
+Run tests inside `ingestion-service/`, `sla-engine-service/`, or `alerting-service/`:
 ```bash
 mvn clean test
-# HTML coverage report: target/site/jacoco/index.html
+```
+* Coverage rules: **>85% line coverage** is strictly enforced via the JaCoCo plugin during maven test phases.
+* View coverage reports at: `target/site/jacoco/index.html`.
+
+### Python ML Service
+Execute testing via pytest:
+```bash
+pip install -r requirements.txt
+pytest
 ```
 
-The build enforces >85% line coverage via the JaCoCo Maven plugin
-(`jacoco-check` execution bound to the `test` phase).
+---
 
-## Repository Layout
+## 📡 API Reference
+
+All requests must include the header `X-API-Key: <global_api_key>` (unless exempt, like `/actuator/health` or `/health`).
+
+### Ingestion Service (`8081`)
+* `POST /api/v1/logs` — Ingest a log payload.
+* `GET /api/v1/logs?tenantCode=&jobType=&page=&size=` — Query paginated logs.
+* `GET /actuator/health` — Public endpoint checking status.
+
+### SLA Engine Service (`8082`)
+* `POST /api/v1/evaluations` — Evaluates log durations and triggers breach predictions.
+* `GET /api/v1/evaluations?tenantCode=&jobType=&page=&size=` — Retrieve evaluations.
+
+### Alerting Service (`8083`)
+* `POST /api/v1/alerts/dispatch` — Dispatch multi-channel notification payloads.
+* `GET /api/v1/alerts?tenantCode=&severity=&page=&size=` — Retrieve paginated notifications feed.
+
+### ML Service (`8000`)
+* `POST /predict` — Estimating SLA breach probability.
+* `POST /train` — Re-trains model on the MongoDB historical logs.
+* `GET /health` — Public endpoint checking status.
+
+---
+
+## 📂 Repository Layout
 
 ```
 enterprise-ops-sla-monitor/
 ├── docker-compose.yml
+├── .env.example
 ├── infra/
-│   └── postgres-init/001_schema.sql      # tenants, user_profiles, sla_thresholds
-├── ingestion-service/                    # Spring Boot — Phase 1 (complete)
-│   ├── src/main/java/com/acme/slamonitor/ingestion/
-│   │   ├── controller/   OperationLogController
-│   │   ├── service/      OperationLogService(+Impl)
-│   │   ├── repository/   TenantRepository (JPA), OperationLogRepository (Mongo)
-│   │   ├── entity/       Tenant (JPA)
-│   │   ├── document/     OperationLogDocument (Mongo)
-│   │   ├── dto/          OperationLogRequest/Response
-│   │   ├── mapper/       OperationLogMapper
-│   │   └── exception/    GlobalExceptionHandler, TenantNotFoundException
-│   └── src/test/java/...                 # JUnit5 + Mockito + MockMvc tests
-├── sla-engine-service/                   # Phase 2
-├── ml-service/                           # Phase 3
-├── alerting-service/                     # Phase 4
-├── admin-dashboard/                      # Phase 5
+│   ├── postgres-init/                    # Auto-seeds Postgres schemas/users
+│   ├── prometheus/                       # Scraper configuration
+│   └── grafana/                          # Provisioned datasources & dashboards
+├── ingestion-service/                    # Ingestion Spring Boot microservice
+├── sla-engine-service/                   # SLA verification Spring Boot microservice
+├── alerting-service/                     # Dispatching and Auditing Spring Boot microservice
+├── ml-service/                           # Python SLA breach probability predictor
+├── admin-dashboard/                      # Angular Glassmorphism dashboard
 └── docs/postman_collection.json
 ```
-
-## API Reference (Ingestion Service, Phase 1)
-
-| Method | Path                                             | Description                              |
-|--------|---------------------------------------------------|-------------------------------------------|
-| POST   | `/api/v1/logs`                                    | Ingest a single operation log entry       |
-| GET    | `/api/v1/logs?tenantCode=&jobType=&page=&size=`   | Query logs, optionally filtered by job type |
-| GET    | `/actuator/health`                                | Health check                              |
-
-## Next Steps
-
-Reply to continue with **Phase 2 (SLA Engine Service)**: it will read `sla_thresholds`
-from Postgres, poll/consume new `operation_logs` from Mongo, compute breach/warning
-status, and expose an alerts read API — laying the groundwork for the ML risk model
-in Phase 3.
