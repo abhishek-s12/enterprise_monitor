@@ -1,0 +1,56 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: alerting-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/${POSTGRES_DB:sla_monitor}
+    username: ${POSTGRES_USER:sla_admin}
+    password: ${POSTGRES_PASSWORD:sla_admin_pw}
+    hikari:
+      maximum-pool-size: 10
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  data:
+    mongodb:
+      uri: mongodb://${MONGO_ROOT_USER:sla_admin}:${MONGO_ROOT_PASSWORD:sla_admin_pw}@localhost:27017/sla_logs?authSource=admin
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+
+logging:
+  level:
+    com.acme.slamonitor: INFO
+
+# ✅ FIX 2: CORS restricted to dashboard origin only
+cors:
+  allowed-origin: ${CORS_ALLOWED_ORIGIN:http://localhost:4200}
+
+# ✅ FIX 3: API Key authentication
+app:
+  security:
+    api-key: ${API_KEY:dev-key-replace-in-prod}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: docker
+  jpa:
+    hibernate:
+      ddl-auto: validate

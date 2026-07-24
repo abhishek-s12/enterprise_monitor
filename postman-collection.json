@@ -1,0 +1,159 @@
+{
+  "info": {
+    "name": "Enterprise Ops SLA Monitor",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "ingestionBaseUrl", "value": "http://localhost:8081" },
+    { "key": "slaEngineBaseUrl", "value": "http://localhost:8082" },
+    { "key": "mlServiceBaseUrl", "value": "http://localhost:8000" },
+    { "key": "alertingBaseUrl", "value": "http://localhost:8083" }
+  ],
+  "item": [
+    {
+      "name": "Ingestion Service (Phase 1)",
+      "item": [
+        {
+          "name": "Ingest Operation Log",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{ingestionBaseUrl}}/api/v1/logs",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenantCode\": \"ACME\",\n  \"jobType\": \"PAYMENT_BATCH\",\n  \"jobId\": \"job-12345\",\n  \"startedAt\": \"2026-07-24T08:00:00Z\",\n  \"completedAt\": \"2026-07-24T08:04:30Z\",\n  \"status\": \"SUCCESS\",\n  \"metadata\": { \"recordCount\": 5400 }\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Logs by Tenant",
+          "request": {
+            "method": "GET",
+            "url": "{{ingestionBaseUrl}}/api/v1/logs?tenantCode=ACME&page=0&size=20"
+          }
+        },
+        {
+          "name": "Get Logs by Tenant + JobType",
+          "request": {
+            "method": "GET",
+            "url": "{{ingestionBaseUrl}}/api/v1/logs?tenantCode=ACME&jobType=PAYMENT_BATCH&page=0&size=20"
+          }
+        },
+        {
+          "name": "Ingestion Service Health Check",
+          "request": {
+            "method": "GET",
+            "url": "{{ingestionBaseUrl}}/actuator/health"
+          }
+        }
+      ]
+    },
+    {
+      "name": "SLA Engine Service (Phase 2)",
+      "item": [
+        {
+          "name": "Evaluate Operation SLA",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{slaEngineBaseUrl}}/api/v1/evaluations/evaluate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenantCode\": \"ACME\",\n  \"jobType\": \"PAYMENT_BATCH\",\n  \"jobId\": \"job-9999\",\n  \"durationMs\": 350000\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Evaluations by Tenant",
+          "request": {
+            "method": "GET",
+            "url": "{{slaEngineBaseUrl}}/api/v1/evaluations?tenantCode=ACME&page=0&size=20"
+          }
+        },
+        {
+          "name": "Get Breach Alerts",
+          "request": {
+            "method": "GET",
+            "url": "{{slaEngineBaseUrl}}/api/v1/evaluations?tenantCode=ACME&status=BREACH&page=0&size=20"
+          }
+        },
+        {
+          "name": "SLA Engine Health Check",
+          "request": {
+            "method": "GET",
+            "url": "{{slaEngineBaseUrl}}/actuator/health"
+          }
+        }
+      ]
+    },
+    {
+      "name": "ML Service (Phase 3)",
+      "item": [
+        {
+          "name": "Predict SLA Breach Risk",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{mlServiceBaseUrl}}/predict",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"duration_ms\": 350000,\n  \"record_count\": 15000,\n  \"warning_threshold_ms\": 180000,\n  \"critical_threshold_ms\": 300000\n}"
+            }
+          }
+        },
+        {
+          "name": "Retrain ML Model",
+          "request": {
+            "method": "POST",
+            "url": "{{mlServiceBaseUrl}}/train"
+          }
+        },
+        {
+          "name": "ML Service Health Check",
+          "request": {
+            "method": "GET",
+            "url": "{{mlServiceBaseUrl}}/health"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Alerting Service (Phase 4)",
+      "item": [
+        {
+          "name": "Dispatch Alert Notification",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{alertingBaseUrl}}/api/v1/alerts/dispatch",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenantCode\": \"ACME\",\n  \"jobType\": \"PAYMENT_BATCH\",\n  \"jobId\": \"job-alert-100\",\n  \"severity\": \"BREACH\",\n  \"durationMs\": 360000,\n  \"message\": \"SLA Breach Detected: PAYMENT_BATCH exceeded critical threshold (360s > 300s)\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Alert Notifications Feed",
+          "request": {
+            "method": "GET",
+            "url": "{{alertingBaseUrl}}/api/v1/alerts?tenantCode=ACME&page=0&size=20"
+          }
+        },
+        {
+          "name": "Get Breach Alerts Feed",
+          "request": {
+            "method": "GET",
+            "url": "{{alertingBaseUrl}}/api/v1/alerts?tenantCode=ACME&severity=BREACH&page=0&size=20"
+          }
+        },
+        {
+          "name": "Alerting Service Health Check",
+          "request": {
+            "method": "GET",
+            "url": "{{alertingBaseUrl}}/actuator/health"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+# ==========================================
+# Target / Maven Build Artifacts
+# ==========================================
+target/
+*.jar
+*.war
+*.ear
+*.rar
+*.nar
+
+# ==========================================
+# IDE Configuration & Project Files
+# ==========================================
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Eclipse
+.classpath
+.project
+.settings/
+bin/
+
+# Visual Studio Code
+.vscode/
+
+# NetBeans
+nbproject/private/
+build/
+nbbuild/
+dist/
+
+# ==========================================
+# Logs & Temporary Files
+# ==========================================
+*.log
+logs/
+*.tmp
+
+# ==========================================
+# OS Specific Files
+# ==========================================
+# Windows
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# ==========================================
+# Environment & Local Overrides
+# ==========================================
+.env
+.env.local
+application-local.yml
+application-local.properties
