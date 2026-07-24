@@ -6,28 +6,48 @@ A production ready microservices ecosystem that ingests high volume operational 
 
 ## 🏗️ System Architecture
 
-```
-                                  ┌───────────────────────────┐
-                                  │  Angular Admin Dashboard  │◀──┐
-                                  │    (Nginx Host: 4200)     │   │
-                                  └─────────────┬─────────────┘   │
-                                                │                 │ HTTP / REST
-                                                ▼                 │ (Authed via X-API-Key)
-    ┌───────────────────────┐     ┌───────────────────────────┐   │
- ──▶│   Ingestion Service   │◀───▶│    SLA Engine Service     │◀──┘
-    │  (Spring Boot: 8081)  │     │   (Spring Boot: 8082)     │
-    └───────────┬───────────┘     └─────────────┬─────────────┘
-                │                               │
-                ▼ (Operation Logs)              ▼ (Evaluations)
-        ┌───────────────┐               ┌───────────────┐
-        │ MongoDB:27017 │               │ Postgres:5432 │ (Tenants, Thresholds, Profiles)
-        └───────────────┘               └───────────────┘
-                                                │
-                                                ▼ (Breach events)
-    ┌───────────────────────┐     ┌───────────────────────────┐
-    │      ML Service       │◀───▶│     Alerting Service      │
-    │    (FastAPI: 8000)    │     │   (Spring Boot: 8083)     │
-    └───────────────────────┘     └───────────────────────────┘
+```mermaid
+flowchart TD
+    %% Nodes Definitions
+    UI["Angular Admin Dashboard\n(Nginx Host: 4200)"]
+    
+    INGEST["Ingestion Service\n(Spring Boot: 8081)"]
+    SLA["SLA Engine Service\n(Spring Boot: 8082)"]
+    
+    MONGO[(MongoDB: 27017)]
+    PG[(Postgres: 5432)]
+    
+    ALERT["Alerting Service\n(Spring Boot: 8083)"]
+    ML["ML Service\n(FastAPI: 8000)"]
+
+    %% External Input
+    EXT[ ] ---> INGEST
+
+    %% Relationships
+    UI -- "HTTP / REST\n(Authed via X-API-Key)" --> SLA
+    INGEST <--> SLA
+    
+    INGEST -- "Operation Logs" --> MONGO
+    SLA -- "Evaluations" --> PG
+    
+    PG -- "Breach events" --> ALERT
+    ALERT <--> ML
+
+    %% Database details / notes
+    subgraph Data Layer
+        MONGO
+        PG
+    end
+
+    %% Node Styling
+    style EXT fill:none,stroke:none
+    style UI fill:#2b5c8f,color:#fff,stroke:#fff
+    style INGEST fill:#2d7d46,color:#fff,stroke:#fff
+    style SLA fill:#2d7d46,color:#fff,stroke:#fff
+    style ALERT fill:#2d7d46,color:#fff,stroke:#fff
+    style ML fill:#009688,color:#fff,stroke:#fff
+    style MONGO fill:#475569,color:#fff,stroke:#fff
+    style PG fill:#475569,color:#fff,stroke:#fff
 ```
 
 ---
