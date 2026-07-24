@@ -1,6 +1,6 @@
 # Enterprise Operations Anomaly & SLA Monitoring System
 
-A production-ready microservices ecosystem that ingests high-volume operational logs, evaluates SLA thresholds, uses a Scikit-Learn machine learning pipeline to predict SLA breach probability, triggers multi-channel alerts, and displays real-time glassmorphism visualizations on an Angular frontend dashboard.
+A production ready microservices ecosystem that ingests high volume operational logs, evaluates SLA thresholds, uses a Scikit-Learn machine learning pipeline to predict SLA breach probability, triggers multi-channel alerts, and displays real time glassmorphism visualizations on an Angular frontend dashboard.
 
 ---
 
@@ -36,20 +36,20 @@ A production-ready microservices ecosystem that ingests high-volume operational 
 
 | Component | Status | Port (Host) | Description |
 | :--- | :--- | :--- | :--- |
-| **Ingestion Service** | ✅ Complete | `8081` | Spring Boot API that ingests logs to MongoDB. |
-| **SLA Engine Service** | ✅ Complete | `8082` | Evaluates log durations against Postgres SLA thresholds. |
-| **ML Service** | ✅ Complete | `8000` | FastAPI predictor estimating SLA breach probability. |
-| **Alerting Service** | ✅ Complete | `8083` | Logs notifications (EMAIL/LOG) to database audits. |
-| **Admin Dashboard** | ✅ Complete | `4200` | Glassmorphism dashboard visualizing streams and KPIs. |
-| **Prometheus Telemetry**| ✅ Complete | `9090` | Scraping CPU/Memory/JVM stats (in `monitoring` profile). |
-| **Grafana Dashboard** | ✅ Complete | `3000` | Pre-provisioned metrics display (in `monitoring` profile). |
+| **Ingestion Service** | Complete | `8081` | Spring Boot API that ingests logs to MongoDB. |
+| **SLA Engine Service** | Complete | `8082` | Evaluates log durations against Postgres SLA thresholds. |
+| **ML Service** | Complete | `8000` | FastAPI predictor estimating SLA breach probability. |
+| **Alerting Service** | Complete | `8083` | Logs notifications (EMAIL/LOG) to database audits. |
+| **Admin Dashboard** | Complete | `4200` | Glassmorphism dashboard visualizing streams and KPIs. |
+| **Prometheus Telemetry**| Complete | `9090` | Scraping CPU/Memory/JVM stats (in `monitoring` profile). |
+| **Grafana Dashboard** | Complete | `3000` | Pre-provisioned metrics display (in `monitoring` profile). |
 
 ---
 
 ## 🔒 Production Security Hardening
 
 This ecosystem is fully hardened for a production deployment:
-* **Secrets Management**: Plaintext credentials are fully parameterized. Values are loaded dynamically from the git-ignored root `.env` file.
+* **Secrets Management**: Plaintext credentials are fully parameterized. Values are loaded dynamically from the git ignored root `.env` file.
 * **CORS Restrictions**: Standard wildcard `*` mappings are disabled. Services only permit connections originating from `CORS_ALLOWED_ORIGIN` (the dashboard at `http://localhost:4200`).
 * **Microservice Authentication**: All non-public APIs require the `X-API-Key` header matching the key defined in the environmental variables.
 * **Database Isolation**: Host mappings for PostgreSQL (`5432`) and MongoDB (`27017`) are closed. Databases reside exclusively within the isolated Docker bridge network.
